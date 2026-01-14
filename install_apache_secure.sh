@@ -1,14 +1,10 @@
 #!/bin/bash
 
-==================================================
-
-RIZKY PROFESSIONAL LINUX WEB PANEL
-
-Credit: RIZKY MAULANA
-
-Debian / Ubuntu / Linux Mint
-
-==================================================
+# ==================================================
+# RIZKY PROFESSIONAL LINUX WEB PANEL
+# Credit: RIZKY MAULANA
+# Debian / Ubuntu / Linux Mint
+# ==================================================
 
 set -e
 
