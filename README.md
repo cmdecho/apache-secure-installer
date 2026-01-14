@@ -40,7 +40,7 @@ Ikuti langkah-langkah di bawah ini untuk menginstal **Rizky Professional Web Pan
 
 Jalankan perintah berikut untuk menghapus **Rizky Professional Web Panel**:
 
-    ```bash
+    ```
     wget -qO- https://raw.githubusercontent.com/cmdecho/apache-secure-installer/main/remove_apache_webpanel.sh | sudo bash
     
 
