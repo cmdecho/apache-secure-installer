@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==================================================
-# Rizky Linux Web Panel + Web Terminal + Dashboard
+# RIZKY PROFESSIONAL LINUX WEB PANEL
 # Credit: RIZKY MAULANA
 # Debian / Ubuntu / Linux Mint
 # ==================================================
@@ -12,38 +12,63 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-echo "🚀 Installing Rizky Linux Web Panel..."
+echo "🚀 Installing Rizky Professional Web Panel..."
 
-# Install Apache, PHP, and tools
+# ======================
+# PACKAGE
+# ======================
 apt update -y
-apt install -y apache2 php libapache2-mod-php sudo
+apt install -y apache2 php libapache2-mod-php sudo unzip ufw
 
-# Enable Apache and start it
+# ======================
+# APACHE
+# ======================
 systemctl enable apache2
 systemctl start apache2
+ufw allow 80/tcp || true
 
-# Enable Port 80 in UFW (Firewall)
-ufw allow 80/tcp
-ufw reload
+# ======================
+# GIVE PERMISSION TO www-data FOR LOGS
+# ======================
+sudo chown -R www-data:www-data /var/log/apache2/*.log
+sudo chmod -R 644 /var/log/apache2/*.log
 
+# ======================
+# SUDO RULE (SAFE ROOT)
+# ======================
+cat <<EOF > /etc/sudoers.d/rizky-panel
+www-data ALL=(root) NOPASSWD: \
+/bin/systemctl restart apache2, \
+/bin/systemctl start apache2, \
+/bin/systemctl stop apache2, \
+/bin/systemctl status apache2, \
+/usr/bin/tail /var/log/apache2/*.log, \
+/bin/df, \
+/usr/bin/free, \
+/usr/bin/uptime
+EOF
+chmod 440 /etc/sudoers.d/rizky-panel
+
+# ======================
+# WEB FILES
+# ======================
 WEB="/var/www/html/rizky_web"
 mkdir -p $WEB/assets
 
 # ======================
-# STYLE (DESKTOP UI)
+# STYLE (Material Design)
 # ======================
 cat <<'EOF' > $WEB/assets/style.css
-*{box-sizing:border-box;font-family:Inter,Arial}
-body{margin:0;background:linear-gradient(135deg,#020617,#0f172a);color:#e5e7eb;display:flex;min-height:100vh}
+body{margin:0;font-family:Inter,Arial;background:#f5f5f5;color:#333;display:flex}
 .sidebar{width:240px;background:#020617;border-right:1px solid #1e293b;padding:20px}
-.sidebar h2{color:#38bdf8;margin-bottom:30px}
-.sidebar a{display:block;color:#cbd5f5;text-decoration:none;padding:12px;border-radius:8px;margin:6px 0}
+.sidebar h2{color:#38bdf8}
+.sidebar a{display:block;color:#cbd5f5;text-decoration:none;padding:12px;border-radius:8px}
 .sidebar a:hover{background:#1e293b}
 .main{flex:1;padding:30px}
-.card{background:#020617;border:1px solid #1e293b;border-radius:12px;padding:20px}
-input,button,textarea{width:100%;padding:12px;margin-top:10px;background:#020617;color:#e5e7eb;border:1px solid #1e293b;border-radius:8px}
-button{background:#38bdf8;color:#020617;font-weight:bold}
-pre{background:#020617;border:1px solid #1e293b;padding:15px;border-radius:10px;overflow:auto}
+.card{background:#fff;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:20px}
+button,input{padding:12px;width:100%;margin-top:10px;border-radius:8px;border:1px solid #1e293b;background:#38bdf8;color:white;font-weight:bold}
+input{padding:12px;width:100%;margin-top:10px;border-radius:8px;border:1px solid #1e293b}
+pre{background:black;color:white;padding:15px;border-radius:10px;overflow:auto}
 EOF
 
 # ======================
@@ -52,9 +77,8 @@ EOF
 cat <<'EOF' > $WEB/config.php
 <?php
 session_start();
-define("APP_NAME","Rizky Linux Web Panel");
-define("USERNAME","admin");
-define("PASSWORD_HASH", password_hash("RIZKY", PASSWORD_DEFAULT));
+define("USER","admin");
+define("PASS_HASH", password_hash("RIZKY", PASSWORD_DEFAULT));
 if(!isset($_SESSION['csrf'])){
   $_SESSION['csrf']=bin2hex(random_bytes(32));
 }
@@ -74,151 +98,150 @@ if(!isset($_SESSION['login'])){
 EOF
 
 # ======================
-# LOGIN
+# LOGIN PAGE (Material Design)
 # ======================
 cat <<'EOF' > $WEB/login.php
-<?php
-require "config.php";
-$error="";
-if($_SERVER["REQUEST_METHOD"]==="POST"){
-if(!hash_equals($_SESSION['csrf'],$_POST['csrf'])) die("CSRF ERROR");
-if($_POST['username']===USERNAME && password_verify($_POST['password'],PASSWORD_HASH)){
-$_SESSION['login']=true;
-header("Location: dashboard.php");exit;
-}else{$error="Login gagal";}
-}
-?>
+<?php require "config.php"; ?>
 <!DOCTYPE html>
-<html><head><title>Login</title>
-<link rel="stylesheet" href="assets/style.css"></head>
-<body style="display:flex;justify-content:center;align-items:center">
-<div class="card" style="max-width:400px">
-<h2>🔐 Login Panel</h2>
-<form method="post">
-<input type="hidden" name="csrf" value="<?=$_SESSION['csrf']?>">
-<input name="username" placeholder="Username" required>
-<input type="password" name="password" placeholder="Password" required>
-<button>Login</button>
-</form>
-<div style="color:#fb7185"><?=$error?></div>
-</div></body></html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Rizky Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h2>Login to Rizky Panel</h2>
+            <form method="POST">
+                <input type="hidden" name="csrf" value="<?=$_SESSION['csrf']?>">
+                <div class="input-field">
+                    <input type="text" name="user" placeholder="Username" required>
+                </div>
+                <div class="input-field">
+                    <input type="password" name="pass" placeholder="Password" required>
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <p style="color:red"><?=$error?></p>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
 EOF
 
 # ======================
-# DASHBOARD (COMPLETE)
+# DASHBOARD PAGE (Material Design)
 # ======================
 cat <<'EOF' > $WEB/dashboard.php
 <?php require "security.php"; ?>
 <!DOCTYPE html>
-<html><head><title>Web Server Dashboard</title>
-<link rel="stylesheet" href="assets/style.css"></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Rizky Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+</head>
 <body>
-<div class="sidebar">
-<h2>Rizky Panel</h2>
-<a href="dashboard.php">Dashboard</a>
-<a href="terminal.php">Web Terminal</a>
-<a href="filemanager.php">File Manager</a>
-<a href="logout.php">Logout</a>
-</div>
-
-<div class="main">
-<h1>🖥 Web Server Dashboard</h1>
-
-<!-- System Monitor -->
-<div class="card">
-<h3>System Monitor</h3>
-<p><b>Uptime:</b> <?=shell_exec("uptime -p")?></p>
-<p><b>Memory Usage:</b> <?=trim(shell_exec("free -h | awk '/Mem:/ {print $3 \" / \" $2}'"))?></p>
-<p><b>Disk Usage:</b> <?=trim(shell_exec("df -h | awk '$NF==\"/\"{print $5}'"))?></p>
-<p><b>CPU Load:</b> <?=implode(" / ",sys_getloadavg())?></p>
-</div>
-
-<!-- Server Information -->
-<div class="card">
-<h3>Server Information</h3>
-<p><b>Apache:</b> <?=apache_get_version()?></p>
-<p><b>PHP:</b> <?=phpversion()?></p>
-<p><b>OS:</b> <?=php_uname()?></p>
-</div>
-
-<!-- Quick Actions -->
-<div class="card">
-<h3>Quick Actions</h3>
-<form method="post" action="actions.php">
-<button name="action" value="restart">🔄 Restart Apache</button>
-<button name="action" value="logs">📜 View Logs</button>
-<button name="action" value="users">👤 Manage Users</button>
-</form>
-</div>
-
-<!-- Network Info -->
-<div class="card">
-<h3>Network Info</h3>
-<p><b>IP Address:</b> <?= $_SERVER['SERVER_ADDR'] ?></p>
-<p><b>Session ID:</b> <?= session_id() ?></p>
-</div>
-
-<div class="footer">
-© <?=date("Y")?> <b>RIZKY MAULANA</b> — Professional Linux Web Panel
-</div>
-
-</div>
-</body></html>
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <h2>Rizky Panel</h2>
+            <a href="dashboard.php">Dashboard</a>
+            <a href="actions.php">Root Actions</a>
+            <a href="logout.php">Logout</a>
+        </div>
+        <div class="main-content">
+            <h1>🖥 Web Server Dashboard</h1>
+            <div class="card">
+                <h3>Apache Version</h3>
+                <p><?= apache_get_version() ?></p>
+            </div>
+            <div class="card">
+                <h3>PHP Version</h3>
+                <p><?= phpversion() ?></p>
+            </div>
+            <div class="card">
+                <h3>Uptime</h3>
+                <p><?= shell_exec("uptime -p") ?></p>
+            </div>
+            <div class="card">
+                <h3>Disk Usage</h3>
+                <pre><?= shell_exec("df -h") ?></pre>
+            </div>
+            <div class="card">
+                <h3>Memory Usage</h3>
+                <pre><?= shell_exec("free -h") ?></pre>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
 EOF
 
 # ======================
-# TERMINAL WEB (SAFE)
+# ROOT ACTION PAGE (Material Design)
 # ======================
-cat <<'EOF' > $WEB/terminal.php
-<?php
-require "security.php";
-$output="";
-$allowed=["ls","pwd","whoami","uptime","df","free","ip a","cat","tail","head"];
-if(isset($_POST['cmd'])){
-$cmd=trim($_POST['cmd']);
-foreach($allowed as $a){
-if(str_starts_with($cmd,$a)){
-$output=shell_exec("cd /var/www && $cmd 2>&1");
-break;
-}}
-if(!$output)$output="Command not allowed";
-}
-?>
+cat <<'EOF' > $WEB/actions.php
+<?php require "security.php"; ?>
 <!DOCTYPE html>
-<html><head><title>Terminal</title>
-<link rel="stylesheet" href="assets/style.css"></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Root Actions</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
 <body>
-<div class="sidebar">
-<h2>Rizky Panel</h2>
-<a href="dashboard.php">Dashboard</a>
-<a href="terminal.php">Web Terminal</a>
-<a href="logout.php">Logout</a>
-</div>
-<div class="main">
-<h1>🖥 Web Terminal</h1>
-<form method="post">
-<input name="cmd" placeholder="contoh: ls /var/www">
-<button>Run</button>
-</form>
-<pre><?=$output?></pre>
-</div></body></html>
+    <div class="sidebar">
+        <h2>Root Action</h2>
+        <a href="dashboard.php">Dashboard</a>
+        <a href="logout.php">Logout</a>
+    </div>
+    <div class="main">
+        <form method="post">
+            <button name="a" value="restart">Restart Apache</button>
+            <button name="a" value="status">Apache Status</button>
+            <button name="a" value="log">Apache Logs</button>
+        </form>
+        <pre>
+        <?php
+        if(isset($_POST['a'])){
+        $cmd = [
+            "restart" => "sudo systemctl restart apache2",
+            "status"  => "sudo systemctl status apache2",
+            "log"     => "sudo tail -n 50 /var/log/apache2/error.log"
+        ];
+        echo shell_exec($cmd[$_POST['a']] . " 2>&1");
+        }
+        ?>
+        </pre>
+    </div>
+</body>
+</html>
 EOF
 
 # ======================
-# LOGOUT
+# LOGOUT PAGE (Material Design)
 # ======================
 cat <<'EOF' > $WEB/logout.php
 <?php session_destroy();header("Location: login.php"); ?>
 EOF
 
+# ======================
+# SET PERMISSIONS & RESTART APACHE
+# ======================
 chown -R www-data:www-data $WEB
 chmod -R 755 $WEB
 systemctl restart apache2
 
 IP=$(hostname -I | awk '{print $1}')
-echo "======================================"
+echo "========================================"
 echo " INSTALL SUCCESS"
-echo " http://$IP/rizky_web/login.php"
-echo " USER : admin"
-echo " PASS : RIZKY"
-echo "======================================"
+echo " URL : http://$IP/rizky_web/login.php"
+echo " USER: admin"
+echo " PASS: RIZKY"
+echo "========================================"
