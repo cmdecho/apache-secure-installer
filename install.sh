@@ -25,6 +25,20 @@ apt install -y apache2 mysql-server php libapache2-mod-php sudo unzip ufw python
     git unzip certbot python3-certbot-apache
 
 # ======================
+# Update PHP to PHP 8.3 (If needed)
+# ======================
+echo "🔧 Checking for PHP 8.3 installation..."
+# Install PHP 8.3 repository if not already installed
+add-apt-repository ppa:ondrej/php -y
+apt update -y
+apt install -y php8.3 php8.3-cli php8.3-curl php8.3-mysql php8.3-fpm php8.3-mbstring php8.3-xml php8.3-json php8.3-zip php8.3-gd
+
+# Set PHP 8.3 as the default
+update-alternatives --set php /usr/bin/php8.3
+update-alternatives --set phpize /usr/bin/phpize8.3
+update-alternatives --set php-config /usr/bin/php-config8.3
+
+# ======================
 # Setup Apache
 # ======================
 systemctl enable apache2
@@ -34,7 +48,7 @@ systemctl start apache2
 # Setup MySQL
 # ======================
 echo "🔐 Setting up MySQL root password..."
-MYSQL_ROOT_PASSWORD="RIZKY" # Ganti dengan password yang diinginkan
+MYSQL_ROOT_PASSWORD="rizky" # Ganti dengan password yang diinginkan
 mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';"
 
 # ======================
@@ -45,10 +59,10 @@ systemctl start redis-server
 echo "✔️ Redis server installed and running!"
 
 # ======================
-# Setup PHP-FPM (Optional for better performance)
+# Setup PHP-FPM (PHP 8.3)
 # ======================
-systemctl enable php7.4-fpm
-systemctl start php7.4-fpm
+systemctl enable php8.3-fpm
+systemctl start php8.3-fpm
 
 # ======================
 # Setup vsftpd (FTP Server)
@@ -151,9 +165,9 @@ echo "<html>
 </html>" > /var/www/html/dashboard/index.html
 
 # ======================
-# Setup Login Page
+# Setup Login Page (Password Hashing)
 # ======================
-echo "🔐 Setting up login page..."
+echo "🔐 Setting up login page with hashed password..."
 echo "<html>
 <head>
     <title>Login to Web Panel</title>
@@ -203,7 +217,7 @@ echo "<html>
 <body>
     <div class='login-container'>
         <h2>Login</h2>
-        <form action='dashboard.html' method='post'>
+        <form method='POST' action='login.php'>
             <input type='text' name='username' placeholder='Username' required>
             <input type='password' name='password' placeholder='Password' required>
             <button type='submit'>Login</button>
