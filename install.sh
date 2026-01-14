@@ -6,91 +6,88 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-echo "🚀 Memperbarui Dashboard ke Desain Premium..."
+echo "🚀 Menambahkan Fitur Login ke Dashboard..."
 
-# Update sistem dan install paket
+# Install PHP (dibutuhkan untuk session & login)
 apt update -y && apt install -y apache2 php libapache2-mod-php
 
 # Direktori web
 WEB_DIR="/var/www/html"
 
-# Menyiapkan file login.html
-cat <<EOF > $WEB_DIR/login.html
+# 1. Membuat file login.php
+cat <<EOF > $WEB_DIR/login.php
+<?php
+session_start();
+\$password_secret = "RIZKY"; // Password yang Anda minta
+
+if (isset(\$_POST['login'])) {
+    if (\$_POST['password'] == \$password_secret) {
+        \$_SESSION['loggedin'] = true;
+        header("Location: index.php");
+        exit;
+    } else {
+        \$error = "Password Salah!";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - RIZKY DEWA SERVER</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; font-family: 'Inter', sans-serif; 
+            background: url('https://images.hdqwalls.com/download/windows-11-stock-original-4k-mm-1920x1080.jpg') no-repeat center center/cover;
+            height: 100vh; display: flex; align-items: center; justify-content: center;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(15px);
+            padding: 40px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2); text-align: center; width: 300px;
+        }
+        h2 { color: white; margin-bottom: 20px; }
+        input { 
+            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; 
+            border: none; outline: none; box-sizing: border-box;
+        }
+        button { 
+            width: 100%; padding: 12px; border-radius: 8px; border: none; 
+            background: #0D66AB; color: white; font-weight: bold; cursor: pointer;
+        }
+        .error { color: #ff4d4d; margin-bottom: 10px; font-size: 0.9rem; }
+    </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-box">
-            <h2>Login</h2>
-            <form action="login.php" method="POST">
-                <div class="input-group">
-                    <label for="username">Username</label>
-                    <input type="text" name="username" id="username" required>
-                </div>
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" name="password" id="password" required>
-                </div>
-                <button type="submit" class="btn btn-green">Login</button>
-            </form>
-        </div>
+    <div class="login-card">
+        <h2>Admin Login</h2>
+        <?php if(isset(\$error)) echo "<p class='error'>\$error</p>"; ?>
+        <form method="POST">
+            <input type="password" name="password" placeholder="Enter Password" required>
+            <button type="submit" name="login">LOGIN</button>
+        </form>
     </div>
 </body>
 </html>
 EOF
 
-# Menyiapkan file login.php
-cat <<EOF > $WEB_DIR/login.php
-<?php
-session_start();
-
-// Cek jika sudah login, langsung redirect ke dashboard
-if (isset(\$_SESSION['logged_in'])) {
-    header("Location: index.html");
-    exit;
-}
-
-// Cek jika form login disubmit
-if (\$_SERVER['REQUEST_METHOD'] == 'POST') {
-    \$username = \$_POST['username'];
-    \$password = \$_POST['password'];
-
-    // Cek kredensial (ganti dengan database atau metode autentikasi lain)
-    if (\$username == 'admin' && \$password == 'adminpassword') {
-        \$_SESSION['logged_in'] = true;
-        header("Location: index.html");
-        exit;
-    } else {
-        echo "<script>alert('Username atau Password salah!');</script>";
-    }
-}
-?>
-EOF
-
-# Menyiapkan file logout.php
+# 2. Membuat file logout.php
 cat <<EOF > $WEB_DIR/logout.php
 <?php
 session_start();
-session_destroy(); // Hapus session login
-header("Location: login.html"); // Arahkan ke halaman login
+session_destroy();
+header("Location: login.php");
 exit;
-?>
 EOF
 
-# Menyiapkan file index.html (Dashboard)
-cat <<EOF > $WEB_DIR/index.html
+# 3. Mengubah index.html menjadi index.php (Menambahkan Proteksi Session)
+# Perhatikan perubahan pada tombol Logout di dalam sidebar
+cat <<EOF > $WEB_DIR/index.php
 <?php
 session_start();
-if (!isset(\$_SESSION['logged_in'])) {
-    header("Location: login.html");
+if (!isset(\$_SESSION['loggedin'])) {
+    header("Location: login.php");
     exit;
 }
 ?>
@@ -114,9 +111,7 @@ if (!isset(\$_SESSION['logged_in'])) {
         </div>
         <div class="menu">
             <a href="#" class="active"><i class="fas fa-th-large"></i> Dashboard</a>
-            <a href="#"><i class="fas fa-database"></i> Database</a>
-            <a href="#"><i class="fas fa-cog"></i> Settings</a>
-            <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            <a href="logout.php" style="color: #ff4d4d;"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
         <div class="user-info">
             Welcome, <strong>Admin</strong> <img src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff" alt="avatar">
@@ -223,3 +218,15 @@ if (!isset(\$_SESSION['logged_in'])) {
 </body>
 </html>
 EOF
+
+# Hapus file lama jika ada
+rm -f $WEB_DIR/index.html
+
+# Restart Apache
+systemctl restart apache2
+
+echo "------------------------------------------------"
+echo "✅ Fitur Login Berhasil Ditambahkan!"
+echo "🔑 Password: RIZKY"
+echo "🌐 Buka browser dan akses IP server Anda."
+echo "------------------------------------------------"
