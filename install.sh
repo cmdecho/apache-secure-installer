@@ -28,6 +28,12 @@ systemctl start apache2
 ufw allow 80/tcp || true
 
 # ======================
+# GIVE PERMISSION TO www-data FOR LOGS
+# ======================
+sudo chown -R www-data:www-data /var/log/apache2/*.log
+sudo chmod -R 644 /var/log/apache2/*.log
+
+# ======================
 # SUDO RULE (SAFE ROOT)
 # ======================
 cat <<EOF > /etc/sudoers.d/rizky-panel
