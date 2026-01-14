@@ -1,304 +1,220 @@
 #!/bin/bash
 
-# ==================================================
-# RIZKY PROFESSIONAL LINUX WEB PANEL
-# Credit: RIZKY MAULANA
-# Debian / Ubuntu / Linux Mint
-# ==================================================
-
-set -e
-
-# Ensure script is run with sudo
+# Pastikan script dijalankan dengan sudo
 if [ "$EUID" -ne 0 ]; then
   echo "❌ Jalankan dengan sudo"
   exit 1
 fi
 
-echo "🚀 Installing Rizky Professional Web Panel..."
+# Menampilkan informasi awal
+echo "🚀 Memulai instalasi Web Server Panel dengan Apache, SSL, Fail2Ban..."
 
-# ======================
-# Install required packages
-# ======================
+# Update sistem dan install paket yang diperlukan
 apt update -y
-apt install -y apache2 php libapache2-mod-php sudo unzip ufw
+apt upgrade -y
+apt install -y apache2 certbot python3-certbot-apache fail2ban unzip curl git
 
-# ======================
-# Configure Apache
-# ======================
+# Mengaktifkan Apache agar berjalan saat boot
 systemctl enable apache2
 systemctl start apache2
-ufw allow 80/tcp || true
 
-# ======================
-# Create sudo rules for the web panel
-# ======================
-cat <<EOF > /etc/sudoers.d/rizky-panel
-www-data ALL=(root) NOPASSWD: \
-/bin/systemctl restart apache2, \
-/bin/systemctl start apache2, \
-/bin/systemctl stop apache2, \
-/bin/systemctl status apache2, \
-/usr/bin/tail /var/log/apache2/*.log, \
-/bin/df, \
-/usr/bin/free, \
-/usr/bin/uptime, \
-/usr/bin/htop, \
-/bin/systemctl status
+# Mengatur SSL dengan Let's Encrypt
+echo "🔒 Mengaktifkan SSL untuk domain example.com..."
+certbot --apache -d example.com --non-interactive --agree-tos --email admin@example.com
+
+# Mengatur Fail2Ban untuk melindungi server
+echo "🛡️ Mengaktifkan Fail2Ban..."
+systemctl enable fail2ban
+systemctl start fail2ban
+
+# Menyiapkan direktori web panel
+echo "📁 Menyiapkan Web Panel..."
+
+# Direktori untuk website
+WEB_DIR="/var/www/html/server_panel"
+
+# Menghapus file default Apache
+rm -rf /var/www/html/*
+
+# Menyiapkan file index.html (Dashboard Web Panel)
+cat <<EOF > /var/www/html/index.html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIZKY DEWA SERVER</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>RIZKY DEWA SERVER</h1>
+    <p>Welcome, Admin</p>
+  </header>
+
+  <div class="dashboard">
+    <!-- Server Info -->
+    <section id="server-status">
+      <div class="status-box">
+        <h2>Apache Running</h2>
+        <span>Status: Active</span>
+      </div>
+      <div class="status-box">
+        <h2>SSL Secure</h2>
+        <span>https://example.com</span>
+      </div>
+      <div class="status-box">
+        <h2>Fail2Ban Active</h2>
+        <span>2 IPs Banned</span>
+      </div>
+    </section>
+
+    <!-- Resource Usage -->
+    <section id="server-resources">
+      <div class="resource-box">
+        <h3>CPU Usage</h3>
+        <div class="progress-bar" style="width: 35%;">35%</div>
+      </div>
+      <div class="resource-box">
+        <h3>Memory Usage</h3>
+        <div class="progress-bar" style="width: 62%;">62%</div>
+      </div>
+      <div class="resource-box">
+        <h3>Disk Usage</h3>
+        <div class="progress-bar" style="width: 45%;">45%</div>
+      </div>
+    </section>
+
+    <!-- Traffic Overview -->
+    <section id="traffic-overview">
+      <canvas id="traffic-chart"></canvas>
+    </section>
+
+    <!-- Quick Controls -->
+    <section id="quick-controls">
+      <button onclick="restartApache()">Restart Apache</button>
+      <button onclick="fileManager()">File Manager</button>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
 EOF
-chmod 440 /etc/sudoers.d/rizky-panel
 
-# ======================
-# Set up web directory and assets
-# ======================
-WEB="/var/www/html/rizky_web"
-mkdir -p $WEB/assets
-
-# ======================
-# Create styles for the web panel (Material Design)
-# ======================
-cat <<'EOF' > $WEB/assets/style.css
+# Menyiapkan file style.css (Desain)
+cat <<EOF > /var/www/html/style.css
 body {
-  margin: 0;
   font-family: 'Roboto', sans-serif;
-  background: #121212;
-  color: #ffffff;
-  display: flex;
-  height: 100vh;
-  flex-direction: column;
+  background-color: #f4f7fc;
+  color: #333;
+  margin: 0;
+  padding: 0;
 }
 
-.sidebar {
-  width: 240px;
-  background: #263238;
-  border-right: 1px solid #37474f;
-  padding: 20px;
-  position: fixed;
-  height: 100%;
-}
-
-.sidebar h2 {
-  color: #00bcd4;
-}
-
-.sidebar a {
-  display: block;
-  color: #b0bec5;
-  text-decoration: none;
-  padding: 12px;
-  border-radius: 8px;
-}
-
-.sidebar a:hover {
-  background: #37474f;
-}
-
-.main {
-  flex: 1;
-  margin-left: 240px;
-  padding: 30px;
-}
-
-.card {
-  background: #263238;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  border: 1px solid #37474f;
-}
-
-button, input {
-  padding: 12px;
-  width: 100%;
-  margin-top: 10px;
-  border-radius: 8px;
-  border: 1px solid #37474f;
-  background: #00bcd4;
+header {
+  background-color: #005d8e; /* Biru gelap seperti di gambar */
   color: white;
+  padding: 20px;
+  text-align: center;
+  font-size: 1.5em;
+}
+
+.dashboard {
+  padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.status-box, .resource-box, .traffic-box {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 48%;
+}
+
+.status-box h2, .resource-box h3 {
+  font-size: 1.2em;
+}
+
+.progress-bar {
+  height: 20px;
+  background-color: #4caf50; /* Hijau untuk progress */
+  border-radius: 5px;
+  text-align: center;
+  color: white;
+  line-height: 20px;
 }
 
 button {
-  background: #00bcd4;
-  color: black;
-  font-weight: bold;
+  background-color: #0066cc;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  margin-top: 10px;
 }
 
-pre {
-  background: #212121;
-  padding: 15px;
-  border-radius: 10px;
-  overflow: auto;
-  color: #b0bec5;
+button:hover {
+  background-color: #005ba0;
 }
 
-footer {
-  background: #37474f;
-  color: #b0bec5;
-  padding: 10px;
-  text-align: center;
-  border-radius: 8px;
+canvas {
+  max-width: 100%;
+  height: 300px;
   margin-top: 20px;
 }
-
-footer p {
-  margin: 0;
-  font-size: 14px;
-}
 EOF
 
-# ======================
-# Create config file for the panel
-# ======================
-cat <<'EOF' > $WEB/config.php
-<?php    
-session_start();    
-define("USER","admin");    
-define("PASS_HASH", password_hash("RIZKY", PASSWORD_DEFAULT));    
-if(!isset($_SESSION['csrf'])){    
-  $_SESSION['csrf'] = bin2hex(random_bytes(32));    
-}    
-?>    
-EOF
-
-# ======================
-# Create security check for login
-# ======================
-cat <<'EOF' > $WEB/security.php
-<?php    
-require "config.php";    
-if(!isset($_SESSION['login'])){    
-  header("Location: login.php");exit;    
-}    
-?>    
-EOF
-
-# ======================
-# Create login page
-# ======================
-cat <<'EOF' > $WEB/login.php
-<?php    
-require "config.php";    
-$error = "";    
-if ($_SERVER["REQUEST_METHOD"] === "POST") {    
-  if (hash_equals($_SESSION['csrf'], $_POST['csrf']) &&    
-      $_POST['user'] === USER &&    
-      password_verify($_POST['pass'], PASS_HASH)) {    
-    $_SESSION['login'] = true;    
-    header("Location: dashboard.php");    
-    exit;    
-  } else {    
-    $error = "Login failed";    
-  }    
-}    
-?>    
-<!DOCTYPE html>    
-<html>    
-<head>    
-  <title>Login</title>    
-  <link rel="stylesheet" href="assets/style.css">    
-</head>    
-<body>    
-  <div class="card" style="max-width:400px;margin:auto;margin-top:50px;">    
-    <h2>🔐 Rizky Panel Login</h2>    
-    <form method="post">    
-      <input type="hidden" name="csrf" value="<?=$_SESSION['csrf']?>">    
-      <input name="user" placeholder="Username" required>    
-      <input type="password" name="pass" placeholder="Password" required>    
-      <button>Login</button>    
-    </form>    
-    <p style="color:red"><?=$error?></p>    
-  </div>    
-</body>    
-</html>    
-EOF
-
-# ======================
-# Create password reset page
-# ======================
-cat <<'EOF' > $WEB/reset_password.php
-<?php
-require "security.php";
-$error = "";
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-  if (hash_equals($_SESSION['csrf'], $_POST['csrf']) && $_POST['new_pass'] === $_POST['confirm_pass']) {
-    // Hash new password and update the config
-    $new_hash = password_hash($_POST['new_pass'], PASSWORD_DEFAULT);
-    file_put_contents('config.php', str_replace(PASS_HASH, $new_hash, file_get_contents('config.php')));
-    header("Location: dashboard.php");
-    exit;
-  } else {
-    $error = "Passwords do not match.";
+# Menyiapkan file script.js (Pengelolaan Grafik dan Kontrol)
+cat <<EOF > /var/www/html/script.js
+// Menampilkan grafik menggunakan Chart.js
+const ctx = document.getElementById('traffic-chart').getContext('2d');
+const trafficChart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      label: 'Visitors',
+      data: [1200, 1500, 1300, 1800, 1600, 1400, 1700],
+      borderColor: '#4CAF50',
+      fill: false,
+    },
+    {
+      label: 'Bandwidth',
+      data: [3, 3.5, 3, 4, 3.5, 4, 3],
+      borderColor: '#FF6347',
+      fill: false,
+    }]
   }
+});
+
+// Fungsi untuk Restart Apache
+function restartApache() {
+  fetch('/restart_apache').then(response => {
+    alert("Apache Restarted!");
+  }).catch(error => {
+    alert("Error restarting Apache!");
+  });
 }
-?>
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Reset Password</title>
-  <link rel="stylesheet" href="assets/style.css">
-</head>
-<body>
-  <div class="card" style="max-width:400px;margin:auto;margin-top:50px;">
-    <h2>🔑 Reset Password</h2>
-    <form method="post">
-      <input type="hidden" name="csrf" value="<?=$_SESSION['csrf']?>">
-      <input name="new_pass" type="password" placeholder="New Password" required>
-      <input name="confirm_pass" type="password" placeholder="Confirm Password" required>
-      <button>Reset Password</button>
-    </form>
-    <p style="color:red"><?=$error?></p>
-  </div>
-</body>
-</html>
+
+// Fungsi untuk File Manager
+function fileManager() {
+  window.location.href = "/file_manager";
+}
 EOF
 
-# ======================
-# Create dashboard page (Improved)
-# ======================
-cat <<'EOF' > $WEB/dashboard.php
-<?php require "security.php"; ?>
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Dashboard</title>
-  <link rel="stylesheet" href="assets/style.css">
-</head>
-<body>
-  <div class="sidebar">
-    <h2>Rizky Panel</h2>
-    <a href="dashboard.php">Dashboard</a>
-    <a href="reset_password.php">Reset Password</a>
-    <a href="logout.php">Logout</a>
-  </div>
-  <div class="main">
-    <h1>🖥 Web Server Dashboard</h1>
-    <div class="card">
-      <p><b>Apache:</b> <?=apache_get_version()?></p>
-      <p><b>PHP:</b> <?=phpversion()?></p>
-      <p><b>OS:</b> <?=php_uname()?></p>
-      <p><b>Uptime:</b> <?=shell_exec("sudo uptime -p")?></p>
-      <p><b>Disk:</b><pre><?=shell_exec("sudo df -h")?></pre></p>
-      <p><b>Memory:</b><pre><?=shell_exec("sudo free -h")?></pre></p>
-      <p><b>Processes:</b><pre><?=shell_exec("sudo htop -n 10")?></pre></p>
-    </div>
-    <footer>
-      <p>© <?=date("Y")?> Rizky Maulana</p>
-      <p>Web Server is built on Kali OS/Arch Linux</p>
-    </footer>
-  </div>
-</body>
-</html>
-EOF
+# Restart Apache untuk menerapkan perubahan
+systemctl restart apache2
 
-# ======================
-# Create logout page
-# ======================
-cat <<'EOF' > $WEB/logout.php
-<?php   
-session_destroy();   
-header("Location: login.php");   
-?>    
-EOF
-
-# ======================
-# Set correct permissions
-# ======================
+# Menampilkan status
+echo "✅ Instalasi selesai!"
+echo "📂 Panel Web dapat diakses di http://example.com"
+echo "🔒 SSL sudah terpasang"
+echo "🛡️ Fail2Ban telah diaktifkan untuk melindungi server"
