@@ -41,7 +41,8 @@ www-data ALL=(root) NOPASSWD: \
 /usr/bin/tail /var/log/apache2/*.log, \
 /bin/df, \
 /usr/bin/free, \
-/usr/bin/uptime
+/usr/bin/uptime, \
+/bin/ls
 EOF
 chmod 440 /etc/sudoers.d/rizky-panel
 
@@ -264,29 +265,27 @@ cat <<'EOF' > $WEB/actions.php
 EOF
 
 # ======================
-# Create logout page
+# Add terminal functionality (ls command)
 # ======================
-cat <<'EOF' > $WEB/logout.php
-<?php 
-session_destroy(); 
-header("Location: login.php"); 
+cat <<'EOF' > $WEB/terminal.php
+<?php  
+require "security.php";  
+$error = "";  
+$dir = "/";  // Default to root directory  
+if ($_SERVER["REQUEST_METHOD"] === "POST") {  
+  if (isset($_POST['dir'])) {  
+    $dir = escapeshellcmd($_POST['dir']); // Ensure no dangerous commands  
+    $output = shell_exec("ls -alh $dir 2>&1");  
+  } else {  
+    $error = "Directory not specified.";  
+  }  
+}  
 ?>  
-EOF
-
-# ======================
-# Set correct permissions
-# ======================
-chown -R www-data:www-data $WEB
-chmod -R 755 $WEB
-
-# Restart Apache to apply changes
-systemctl restart apache2
-
-# Output installation success
-IP=$(hostname -I | awk '{print $1}')
-echo "========================================"
-echo " INSTALL SUCCESS"
-echo " URL : http://$IP/rizky_web/login.php"
-echo " USER: admin"
-echo " PASS: RIZKY"
-echo "========================================"
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Terminal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div class="
