@@ -232,5 +232,3 @@ echo " URL : http://$IP/rizky_web/login.php"
 echo " USER: admin"
 echo " PASS: RIZKY"
 echo "========================================"
-
-Manager restart Apache view log nggak bisa bacaannya not found Apache /2.4.58(Ubuntu) server local host port 80 apa yg salah
