@@ -41,8 +41,7 @@ www-data ALL=(root) NOPASSWD: \
 /usr/bin/tail /var/log/apache2/*.log, \
 /bin/df, \
 /usr/bin/free, \
-/usr/bin/uptime, \
-/bin/ls
+/usr/bin/uptime
 EOF
 chmod 440 /etc/sudoers.d/rizky-panel
 
@@ -121,6 +120,20 @@ pre {
   padding: 15px;
   border-radius: 10px;
   overflow: auto;
+}
+
+footer {
+  background: #1e293b;
+  color: #cbd5f5;
+  padding: 10px;
+  text-align: center;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+footer p {
+  margin: 0;
+  font-size: 14px;
 }
 EOF
 
@@ -218,10 +231,13 @@ cat <<'EOF' > $WEB/dashboard.php
       <p><b>Disk:</b><pre><?=shell_exec("sudo df -h")?></pre></p>
       <p><b>Memory:</b><pre><?=shell_exec("sudo free -h")?></pre></p>
     </div>
-    <footer>© <?=date("Y")?> RIZKY MAULANA</footer>
+    <footer>
+      <p>© <?=date("Y")?> Rizky Maulana</p>
+      <p>Web Server is built on Kali OS/Arch Linux</p>
+    </footer>
   </div>
 </body>
-</html>  
+</html>
 EOF
 
 # ======================
@@ -265,27 +281,29 @@ cat <<'EOF' > $WEB/actions.php
 EOF
 
 # ======================
-# Add terminal functionality (ls command)
+# Create logout page
 # ======================
-cat <<'EOF' > $WEB/terminal.php
-<?php  
-require "security.php";  
-$error = "";  
-$dir = "/";  // Default to root directory  
-if ($_SERVER["REQUEST_METHOD"] === "POST") {  
-  if (isset($_POST['dir'])) {  
-    $dir = escapeshellcmd($_POST['dir']); // Ensure no dangerous commands  
-    $output = shell_exec("ls -alh $dir 2>&1");  
-  } else {  
-    $error = "Directory not specified.";  
-  }  
-}  
+cat <<'EOF' > $WEB/logout.php
+<?php 
+session_destroy(); 
+header("Location: login.php"); 
 ?>  
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Terminal</title>
-  <link rel="stylesheet" href="assets/style.css">
-</head>
-<body>
-  <div class="
+EOF
+
+# ======================
+# Set correct permissions
+# ======================
+chown -R www-data:www-data $WEB
+chmod -R 755 $WEB
+
+# Restart Apache to apply changes
+systemctl restart apache2
+
+# Output installation success
+IP=$(hostname -I | awk '{print $1}')
+echo "========================================"
+echo " INSTALL SUCCESS"
+echo " URL : http://$IP/rizky_web/login.php"
+echo " USER: admin"
+echo " PASS: RIZKY"
+echo "========================================"
