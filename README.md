@@ -62,5 +62,3 @@ Jika Anda ingin menghapus **Rizky Maulana Web Panel** dan semua komponennya, jal
 
 ```bash
 wget -qO- https://raw.githubusercontent.com/cmdecho/apache-secure-installer/main/remove_apache_webpanel.sh | sudo bash
-
-   
