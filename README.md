@@ -16,9 +16,6 @@
     - [Instalasi Web Panel](#instalasi-web-panel)
     - [Akses Halaman Login](#akses-halaman-login)
 2. [Penghapusan Web Panel](#penghapusan-web-panel)
-3. [Membuat dan Menyesuaikan Halaman Login](#membuat-dan-menyesuaikan-halaman-login)
-4. [Kontribusi](#kontribusi)
-5. [Lisensi](#lisensi)
 
 ---
 
@@ -35,13 +32,35 @@ Ikuti langkah-langkah di bawah ini untuk menginstal **Rizky Professional Web Pan
 
     ```bash
     wget -qO- https://raw.githubusercontent.com/cmdecho/apache-secure-installer/main/install_apache_secure.sh | sudo bash
-
-
-
-Jalankan perintah berikut untuk menghapus **Rizky Professional Web Panel**:
-
     ```
-    wget -qO- https://raw.githubusercontent.com/cmdecho/apache-secure-installer/main/remove_apache_webpanel.sh | sudo bash
-    
 
-    
+    Perintah ini akan:
+    - Menginstal **Apache**, **PHP**, dan beberapa paket yang diperlukan.
+    - Mengonfigurasi Apache dengan pengaturan keamanan yang disarankan.
+
+3. **Verifikasi Instalasi**  
+   Setelah instalasi selesai, Anda dapat mengakses panel web melalui browser Anda di:
+
+
+**Login menggunakan**:
+- Username: `admin`
+- Password: `RIZKY`
+
+### Akses Halaman Login
+
+Setelah instalasi, Anda dapat mengakses halaman login melalui URL berikut:
+
+[http://localhost/rizky_web/login.php](http://localhost/rizky_web/login.php)
+
+Halaman ini memungkinkan Anda untuk masuk ke dalam panel dan mulai mengelola server Anda.
+
+---
+
+## Penghapusan Web Panel
+
+Jika Anda ingin menghapus **Rizky Professional Web Panel** dan semua komponennya, jalankan perintah berikut:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/cmdecho/apache-secure-installer/main/remove_apache_webpanel.sh | sudo bash
+
+   
