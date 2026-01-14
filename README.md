@@ -41,11 +41,6 @@ Ikuti langkah-langkah di bawah ini untuk menginstal **Rizky Maulana Web Panel** 
 3. **Verifikasi Instalasi**  
    Setelah instalasi selesai, Anda dapat mengakses panel web melalui browser Anda di:
 
-
-**Login menggunakan**:
-- Username: `admin`
-- Password: `RIZKY`
-
 ### Akses Halaman Login
 
 Setelah instalasi, Anda dapat mengakses halaman login melalui URL berikut:
