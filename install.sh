@@ -34,7 +34,7 @@ systemctl start apache2
 # Setup MySQL
 # ======================
 echo "🔐 Setting up MySQL root password..."
-MYSQL_ROOT_PASSWORD="rootpassword" # Ganti dengan password yang diinginkan
+MYSQL_ROOT_PASSWORD="RIZKY" # Ganti dengan password yang diinginkan
 mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';"
 
 # ======================
