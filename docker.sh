@@ -1,13 +1,12 @@
 #!/bin/bash
 
-# Nama folder proyek
 PROJECT_NAME="rizky_dewa_server"
-mkdir -p $PROJECT_NAME
+mkdir -p $PROJECT_NAME/html
 cd $PROJECT_NAME
 
-echo "🚀 Membangun RIZKY DEWA SERVER berbasis Docker..."
+echo "⌨️ Mengupgrade RIZKY DEWA SERVER ke Terminal Commander Edition..."
 
-# 1. Membuat file docker-compose.yml
+# 1. Docker Compose
 cat <<EOF > docker-compose.yml
 version: '3.8'
 services:
@@ -21,145 +20,126 @@ services:
     restart: always
 EOF
 
-# 2. Membuat folder html untuk menyimpan file web
-mkdir -p html
-
-# 3. Membuat file login.php (Sesuai kode kamu)
-cat <<EOF > html/login.php
+# 2. Update Dashboard dengan Remote Console (index.php)
+cat <<EOF > html/index.php
 <?php
 session_start();
-\$password_secret = "RIZKY"; 
+if (!isset(\$_SESSION['loggedin'])) { header("Location: login.php"); exit; }
 
-if (isset(\$_POST['login'])) {
-    if (\$_POST['password'] == \$password_secret) {
-        \$_SESSION['loggedin'] = true;
-        header("Location: index.php");
-        exit;
+// Logika Remote Console Sederhana
+\$cmd_output = "";
+if (isset(\$_POST['exec_cmd'])) {
+    \$cmd = \$_POST['command'];
+    // Daftar perintah yang diizinkan (White-list) demi keamanan
+    \$allowed_cmds = ['ls', 'whoami', 'pwd', 'date', 'uptime', 'free', 'hostname'];
+    
+    // Ambil kata pertama dari perintah
+    \$base_cmd = explode(' ', trim(\$cmd))[0];
+    
+    if (in_array(\$base_cmd, \$allowed_cmds)) {
+        \$cmd_output = shell_exec(\$cmd . " 2>&1");
     } else {
-        \$error = "Password Salah!";
+        \$cmd_output = "Akses Ditolak: Perintah '\$base_cmd' tidak diizinkan demi keamanan.";
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Login - RIZKY DEWA SERVER</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <title>Commander Panel | RIZKY DEWA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { 
-            margin: 0; font-family: 'Inter', sans-serif; 
-            background: url('https://images.hdqwalls.com/download/windows-11-stock-original-4k-mm-1920x1080.jpg') no-repeat center center/cover;
-            height: 100vh; display: flex; align-items: center; justify-content: center;
-        }
-        .login-card {
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
-            padding: 40px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3); text-align: center; width: 300px;
-        }
-        h2 { color: white; margin-bottom: 20px; }
-        input { 
-            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; 
-            border: none; outline: none; box-sizing: border-box; background: rgba(255,255,255,0.9);
-        }
-        button { 
-            width: 100%; padding: 12px; border-radius: 8px; border: none; 
-            background: #0D66AB; color: white; font-weight: bold; cursor: pointer;
-        }
-        .error { color: #ff4d4d; margin-bottom: 10px; font-size: 0.9rem; }
+        body { background: #0c0c0e; color: #fff; font-family: 'Inter', sans-serif; }
+        .sidebar { width: 280px; height: 100vh; background: #000; position: fixed; border-right: 1px solid #222; padding: 30px; }
+        .main-content { margin-left: 280px; padding: 40px; }
+        .terminal-card { background: #000; border: 1px solid #333; border-radius: 12px; overflow: hidden; }
+        .terminal-header { background: #1a1a1a; padding: 10px 20px; font-size: 12px; color: #aaa; border-bottom: 1px solid #333; }
+        .terminal-body { padding: 20px; font-family: 'Courier New', monospace; color: #0f0; min-height: 200px; max-height: 400px; overflow-y: auto; }
+        .cmd-input { background: transparent; border: none; color: #0f0; width: 100%; outline: none; font-family: 'Courier New', monospace; }
+        .info-pill { background: rgba(0, 112, 243, 0.1); border: 1px solid #0070f3; color: #0070f3; padding: 5px 15px; border-radius: 8px; font-size: 12px; }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <h2>Admin Login</h2>
-        <?php if(isset(\$error)) echo "<p class='error'>\$error</p>"; ?>
-        <form method="POST">
-            <input type="password" name="password" placeholder="Enter Password" required>
-            <button type="submit" name="login">LOGIN</button>
-        </form>
+    <div class="sidebar">
+        <h3 class="fw-bold text-primary mb-5"><i class="fas fa-terminal me-2"></i>COMMANDER</h3>
+        <nav class="nav flex-column gap-3">
+            <a href="#" class="text-white text-decoration-none active"><i class="fas fa-square-terminal me-2"></i> Remote Shell</a>
+            <a href="#" class="text-secondary text-decoration-none"><i class="fas fa-box me-2"></i> Containers</a>
+            <a href="logout.php" class="text-danger text-decoration-none mt-5"><i class="fas fa-power-off me-2"></i> Terminate Session</a>
+        </nav>
     </div>
-</body>
-</html>
-EOF
 
-# 4. Membuat file logout.php
-cat <<EOF > html/logout.php
-<?php
-session_start();
-session_destroy();
-header("Location: login.php");
-exit;
-EOF
-
-# 5. Membuat file index.php (Dashboard Proteksi Session)
-cat <<EOF > html/index.php
-<?php
-session_start();
-if (!isset(\$_SESSION['loggedin'])) {
-    header("Location: login.php");
-    exit;
-}
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RIZKY DEWA SERVER - Dashboard</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        /* CSS SEDERHANA UNTUK DASHBOARD */
-        body { margin: 0; font-family: 'Inter', sans-serif; background: #1a1a1a; color: white; display: flex; }
-        .sidebar { width: 250px; background: #111; height: 100vh; padding: 20px; border-right: 1px solid #333; }
-        .sidebar .brand { font-size: 1.2rem; font-weight: bold; color: #0D8ABC; margin-bottom: 30px; }
-        .sidebar a { display: block; color: #ccc; text-decoration: none; padding: 10px 0; }
-        .sidebar a.active { color: #0D8ABC; }
-        .content { flex: 1; padding: 40px; }
-        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .status-card { background: #222; padding: 20px; border-radius: 10px; display: flex; align-items: center; gap: 15px; }
-        .text-success { color: #2ecc71; }
-        .status-card i { font-size: 2rem; }
-    </style>
-</head>
-<body>
-    <nav class="sidebar">
-        <div class="brand"><i class="fas fa-server"></i> RIZKY DEWA SERVER</div>
-        <a href="#" class="active"><i class="fas fa-th-large"></i> Dashboard</a>
-        <a href="logout.php" style="color: #ff4d4d;"><i class="fas fa-sign-out-alt"></i> Logout</a>
-    </nav>
-    <main class="content">
-        <h1>Welcome, Admin</h1>
-        <div class="status-grid">
-            <div class="status-card">
-                <i class="fas fa-check-circle text-success"></i>
-                <div><span>Docker Apache</span><br><small>Status: Active</small></div>
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h1 class="fw-bold mb-0 text-white">Cloud Terminal</h1>
+                <p class="text-secondary small">Direct access to containerized environment</p>
             </div>
-            <div class="status-card">
-                <i class="fas fa-database" style="color:#3498db"></i>
-                <div><span>Database</span><br><small>Status: Connected</small></div>
+            <div class="info-pill">SYSTEM: ONLINE</div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="terminal-card">
+                    <div class="terminal-header">
+                        <i class="fas fa-circle text-danger me-1"></i>
+                        <i class="fas fa-circle text-warning me-1"></i>
+                        <i class="fas fa-circle text-success me-1"></i>
+                        <span class="ms-3">rizky@docker-container:~</span>
+                    </div>
+                    <div class="terminal-body" id="term-body">
+                        <?php if (\$cmd_output): ?>
+                            <div class="text-secondary mb-2">> Perintah dijalankan...</div>
+                            <pre><?php echo htmlspecialchars(\$cmd_output); ?></pre>
+                        <?php else: ?>
+                            <div class="text-secondary">Selamat datang di RIZKY_OS Console. Ketik perintah untuk memulai.</div>
+                            <div class="small text-muted mb-3">Tersedia: ls, whoami, pwd, date, uptime, free</div>
+                        <?php endif; ?>
+                        
+                        <div class="d-flex align-items-center">
+                            <span class="text-primary me-2">rizky#</span>
+                            <form method="POST" class="w-100">
+                                <input type="text" name="command" class="cmd-input" placeholder="..." autofocus autocomplete="off">
+                                <input type="submit" name="exec_cmd" style="display: none;">
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <p style="margin-top: 20px;">Dijalankan di dalam Container Docker (Terisolasi dari OS Linux Mint).</p>
-    </main>
+
+        <div class="mt-4 row g-3">
+            <div class="col-md-4">
+                <div class="p-3 border border-secondary rounded bg-dark small">
+                    <i class="fas fa-info-circle text-info me-2"></i> 
+                    <strong>Tip:</strong> Ketik <code>uptime</code> untuk cek durasi server menyala.
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 border border-secondary rounded bg-dark small">
+                    <i class="fas fa-user-secret text-warning me-2"></i> 
+                    <strong>Status:</strong> Mode Sandbox Aktif.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-scroll terminal ke bawah
+        const body = document.getElementById('term-body');
+        body.scrollTop = body.scrollHeight;
+    </script>
 </body>
 </html>
 EOF
 
-# 6. Cek & Install Docker & Docker Compose
-if ! command -v docker &> /dev/null; then
-    echo "📦 Docker tidak ditemukan. Menginstall..."
-    sudo apt update && sudo apt install -y docker.io docker-compose
-    sudo usermod -aG docker \$USER
-fi
-
-# 7. Jalankan Container
-echo "🛠️ Menjalankan Docker Compose..."
+# 3. Jalankan Docker
 sudo docker-compose up -d
 
 echo "------------------------------------------------"
-echo "✅ RIZKY DEWA SERVER BERHASIL DI-DEPLOY!"
-echo "🔑 Password Login: RIZKY"
+echo "✅ TERMINAL COMMANDER EDITION DEPLOYED!"
+echo "⌨️  Buka dashboard dan coba ketik: uptime"
 echo "🌐 Akses: http://localhost"
-echo "📂 Folder Proyek: $(pwd)"
 echo "------------------------------------------------"
